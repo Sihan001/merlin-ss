@@ -386,7 +386,7 @@ global(){
 
 uprule(){
 	echo_date 正在下载gfwlist文件
-	url_main="https://raw.githubusercontent.com/hq450/fancyss/master/rules"
+	url_main="https://raw.githubusercontent.com/Sihan001/merlin-ss/master/etc/config"
 	wget --no-check-certificate --timeout=8 -qO - "$url_main"/gfwlist.conf > /tmp/gfwlist.conf
 	md5sum_gfwlist1=$(md5sum /tmp/gfwlist.conf | sed 's/ /\n/g'| sed -n 1p)
 	md5sum_gfwlist2=$(md5sum $SS_CONFIG/gfwlist.conf | sed 's/ /\n/g'| sed -n 1p)
