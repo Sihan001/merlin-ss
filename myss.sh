@@ -5,6 +5,7 @@ alias echo_date='echo 【$(TZ=UTC-8 date -R +%Y年%m月%d日\ %X)】:'
 # shadowsocks mode 
 # 2 global, 1 auto(gfw)
 SS_MODE=1
+DNS=8.8.8.8:53
 # path
 SS_PATH=/mnt/sda1/opt/shadowsocks
 SS_BIN=$SS_PATH/bin
@@ -174,7 +175,7 @@ create_dnsmasq_conf(){
 start_dns(){
 	echo_date 开启ss-tunnel，用于dns解析...
 	BIN=$SS_BIN/ss-tunnel
-	$BIN -c $CONFIG_FILE -l $DNS_PORT -L 8.8.8.8:53 -u -f /var/run/sstunnel.pid >/dev/null 2>&1
+	$BIN -c $CONFIG_FILE -l $DNS_PORT -L $DNS -u -f /var/run/sstunnel.pid >/dev/null 2>&1
 }
 
 start_ss_redir(){
