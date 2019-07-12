@@ -7,7 +7,7 @@ alias echo_date='echo 【$(TZ=UTC-8 date -R +%Y年%m月%d日\ %X)】:'
 SS_MODE=1
 DNS=8.8.8.8:53
 # path
-SS_PATH=/mnt/sda1/opt/shadowsocks
+SS_PATH=/mnt/sda1/opt/myss
 SS_BIN=$SS_PATH/bin
 SS_ETC=$SS_PATH/etc
 SS_CONFIG=$SS_ETC/config
@@ -106,6 +106,7 @@ flush_nat(){
 	# flush ipset
 	ipset -F white_list >/dev/null 2>&1 && ipset -X white_list >/dev/null 2>&1
 	ipset -F gfwlist >/dev/null 2>&1 && ipset -X gfwlist >/dev/null 2>&1
+	ipset -F black_list >/dev/null 2>&1 && ipset -X black_list >/dev/null 2>&1
 }
 
 detect(){
@@ -143,6 +144,7 @@ create_ipset(){
 	echo_date 创建ipset名单
 	ipset -! create white_list nethash && ipset flush white_list
 	ipset -! create gfwlist nethash && ipset flush gfwlist
+	ipset -! create black_list nethash && ipset flush black_list
 }
 
 create_dnsmasq_conf(){
@@ -239,6 +241,14 @@ add_white_black_ip(){
 			ipset -! add white_list $ip >/dev/null 2>&1
 		done
 	fi
+
+	# add black ip
+	if [ -f "$SS_CONFIG/blacklist.txt" ];then
+		for ip in `cat $SS_CONFIG/blacklist.txt`
+		do
+			ipset -! add black_list $ip >/dev/null 2>&1
+		done
+	fi
 	
 }
 
@@ -264,6 +274,8 @@ apply_nat_rules(){
 	
 	# IP/cidr/白域名 白名单控制（不走ss）
 	iptables -t nat -A SHADOWSOCKS -p tcp -m set --match-set white_list dst -j RETURN
+	# IP 黑名单强制走ss
+	iptables -t nat -A SHADOWSOCKS -p tcp -m set --match-set black_list dst -j REDIRECT --to-ports 3333
 
 	#-----------------------FOR GLOABLE---------------------
 	# 创建gfwlist模式nat rule
@@ -276,15 +288,15 @@ apply_nat_rules(){
 	iptables -t nat -N SHADOWSOCKS_GFW
 	# IP黑名单控制-gfwlist（走ss）
 	iptables -t nat -A SHADOWSOCKS_GFW -p tcp -m set --match-set gfwlist dst -j REDIRECT --to-ports 3333
-	#iptables -t nat -A OUTPUT -p tcp -m set --match-set gfwlist dst -j REDIRECT --to-ports 3333
 	
-	# 把最后剩余流量重定向到相应模式的nat表中对应的主模式的链
+	
+	# 流量分配
+	iptables -t nat -I PREROUTING -p tcp -j SHADOWSOCKS
 	case $SS_MODE in
 	1)
 		iptables -t nat -I PREROUTING -p tcp -j $(get_action_chain $SS_MODE)
 		;;
 	2)
-		iptables -t nat -I PREROUTING -p tcp -j SHADOWSOCKS
 		iptables -t nat -I PREROUTING -p tcp -j $(get_action_chain $SS_MODE)
 		;;
 	esac
