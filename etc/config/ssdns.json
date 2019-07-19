@@ -1,0 +1,9 @@
+{
+    "server": "xx.xx.xx.x",
+    "server_port": 80,
+    "local_address": "0.0.0.0",
+    "local_port": 3333,
+    "password": "xxxxx",
+    "timeout": 300,
+    "method": "chacha20"
+}
